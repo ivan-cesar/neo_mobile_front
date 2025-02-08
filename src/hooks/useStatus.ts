@@ -1,39 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { statusService } from "@/services/statusService";
-import type { CreateStatusInput } from "@/types/status";
+import type { Status } from "@/types/status";
 
 export function useStatuses() {
-  return useQuery({
-    queryKey: ["statuses"],
-    queryFn: statusService.getAll,
-  });
-}
+  const [statuses, setStatuses] = useState<Status[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null); // Explicitly define the error type
 
-export function useStatus(id: string) {
-  return useQuery({
-    queryKey: ["status", id],
-    queryFn: () => statusService.getById(id),
-  });
-}
+  useEffect(() => {
+    statusService.getAll()
+      .then(setStatuses)
+      .catch((err) => setError(err)) // Ensure the error is of type Error
+      .finally(() => setLoading(false));
+  }, []);
 
-export function useCreateStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: CreateStatusInput) => statusService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["statuses"] });
-    },
-  });
-}
-
-export function useDeleteStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => statusService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["statuses"] });
-    },
-  });
+  return { statuses, loading, error };
 }
